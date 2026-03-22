@@ -95,7 +95,7 @@ body {
     padding: 6px;
     border-radius: 10px;
     margin-bottom: 5px;
-    margin-left: 30%;
+    margin-left: 25%;
 }
 
 .cat_icon img {
@@ -108,6 +108,9 @@ body {
 
 .blue {
     background: #E8F0FF;
+}
+.horas{
+    margin-left: 15px;
 }
 
 /* ANUNCIO */
