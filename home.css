@@ -1,8 +1,8 @@
 * {
-    margin: 0;
+     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: Arial, sans-serif;
+    font-family: 'Poppins', sans-serif;
 }
 
 body {
@@ -131,7 +131,9 @@ body {
     justify-content: space-between;
     padding: 15px;
 }
-
+.destaque1{
+    font-weight: bold;
+}
 .destaque2 {
     color: #FF5B30;
 }
@@ -177,6 +179,7 @@ body {
     border-radius: 10px;
     margin-left: auto;
     font-size: 12px;
+    font-weight: bold;
 }
 
 /* NAVEGAÇÃO */
