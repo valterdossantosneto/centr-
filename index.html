@@ -1,13 +1,152 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
+    <title>Portal do Centro</title>
+    <link rel="stylesheet" href="home.css">
 </head>
 <body>
-    <div>
-        home
+
+<div class="container">
+
+    <!-- CABEÇALHO -->
+    <header class="cabecalho">
+        <span class="cab1">Bom dia, Aracaju ☀️</span>
+        <span class="cab2">O que você procura hoje?</span>
+
+        <!-- FORMULÁRIO DE BUSCA -->
+        <form class="input_pesquisa" id="formBusca">
+            <img src="assets/lupa.png">
+            <input 
+                type="text" 
+                id="campoBusca"
+                placeholder="Tênis, corte de cabelo, lojas...">
+        </form>
+    </header>
+
+    <!-- CATEGORIAS -->
+    <section class="categorias">
+        <div class="categorias_topo">
+            <span class="cat_titulo1">Lojas por categoria</span>
+            <span class="cat_titulo2">Ver todos</span>
+        </div>
+
+        <div class="cat_button">
+
+            <div class="cat_button_item">
+                <div class="cat_icon rose">
+                    <img src="assets/cabide.png">
+                </div>
+                <span>Moda</span>
+            </div>
+
+            <div class="cat_button_item">
+                <div class="cat_icon blue">
+                    <img src="assets/talheres.png">
+                </div>
+                <span>Alimentação</span>
+            </div>
+
+            <div class="cat_button_item">
+                <div class="cat_icon blue">
+                    <img src="assets/batom.png">
+                </div>
+                <span>Beleza</span>
+            </div>
+
+            <div class="cat_button_item">
+                <div class="cat_icon rose">
+                    <img src="assets/iphone.png">
+                </div>
+                <span>Eletrônicos</span>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ANÚNCIO -->
+    <section class="anuncio">
+        <div class="anuncio_titulo">Black Friday</div>
+        <div class="anuncio_corpo">Desconto que você só encontra no centro!</div>
+    </section>
+
+    <!-- EVENTOS -->
+    <section class="destaque">
+        <span class="destaque1">Hoje no centro</span>
+        <span class="destaque2">Ver agenda</span>
+    </section>
+
+    <section class="anuncio_destaque">
+        <div class="date_box">
+            <div class="date_dia">21</div>
+            <div>Mar</div>
+        </div>
+
+        <div>
+            <div class="evento_titulo">Feira cultural de Aracaju</div>
+            <div class="evento_local">
+                <img src="assets/alfinete.png">
+                Praça Fausto Cardoso • 16h - 22h
+            </div>
+        </div>
+
+        <div class="status_evento">Em andamento</div>
+    </section>
+
+</div>
+
+<!-- NAVEGAÇÃO -->
+<nav class="navegacao">
+    <div class="nav_item">
+        <div>
+            <img src="assets/botao-de-inicio.png">
+        </div>
+        <div>
+            <span>Início</span>
+        </div>
     </div>
+
+    <div class="nav_item">
+        <div>
+            <img src="assets/mapa.png">
+        </div>
+        <div>
+            <span>Explorar</span>
+        </div>
+    </div>
+
+    <div class="nav_item">
+        <div>
+            <img src="assets/calendario.png">
+        </div>
+        <div>
+            <span>Eventos</span>
+        </div>
+    </div>
+
+    <div class="nav_item">
+        <div>
+            <img src="assets/lupa2.png">
+        </div>
+        <div>
+            <span>Busca</span>
+        </div>
+    </div>
+</nav>
+
+<!-- SCRIPT DE BUSCA -->
+<script>
+document.getElementById("formBusca").addEventListener("submit", function(event) {
+    event.preventDefault();
+
+    const termo = document.getElementById("campoBusca").value;
+
+    if (termo.trim() !== "") {
+        window.location.href = "index copy.html?q=" + encodeURIComponent(termo);
+    }
+});
+</script>
+
 </body>
 </html>
