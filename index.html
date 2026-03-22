@@ -1,158 +1,940 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal do Centro</title>
-    <link rel="stylesheet" href="home.css">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <title>CENTRÔ — Guia Inteligente do Centro de Aracaju</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+
+  <style>
+    /* ─── RESET ─────────────────────────────────────────────────────────── */
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;font-family:'Poppins',sans-serif;background:#ccc;overflow:hidden}
+    #root{height:100%;overflow:hidden;display:flex;justify-content:center;align-items:flex-start}
+
+    /* ─── VARIÁVEIS ──────────────────────────────────────────────────────── */
+    :root{
+      --primary:#FF5B30;--dark:#0E162C;--text:#1A1A2E;--muted:#6B7A99;
+      --border:#E5E5EB;--surface:#fff;--bg:#F5F5F5;
+      --green:#18B868;--green-bg:#E8FDF1;
+      --blue:#3B82F6;--blue-bg:#E8F0FF;
+      --purple:#8B5CF6;--primary-bg:#FFF0EB;
+      --nav-height:72px;
+    }
+
+    /* ─── SHELL ──────────────────────────────────────────────────────────── */
+    #root{display:flex;justify-content:center;align-items:flex-start}
+    .app-shell{
+      width:390px;height:100vh;background:var(--bg);
+      position:relative;display:flex;flex-direction:column;
+      box-shadow:0 0 60px rgba(0,0,0,.25);overflow:hidden;
+      flex-shrink:0;
+    }
+
+    /* ─── TRANSIÇÕES DE TELA ─────────────────────────────────────────────── */
+    .screen-wrapper{
+      flex:1;min-height:0;display:flex;flex-direction:column;
+      opacity:0;transform:translateY(10px);
+      transition:opacity 280ms ease,transform 280ms ease;
+    }
+    .screen-wrapper.visible{opacity:1;transform:translateY(0)}
+    .screen{flex:1;min-height:0;overflow-y:auto;padding-bottom:var(--nav-height)}
+    .screen::-webkit-scrollbar{display:none}
+
+    /* ─── NAV ────────────────────────────────────────────────────────────── */
+    .nav{
+      position:absolute;bottom:0;left:0;right:0;height:var(--nav-height);
+      background:var(--surface);border-top:1px solid var(--border);
+      display:flex;justify-content:space-around;align-items:flex-start;
+      padding:8px 0 12px;z-index:200;
+    }
+    .nav-item{
+      display:flex;flex-direction:column;align-items:center;gap:2px;
+      cursor:pointer;padding:6px 16px;border-radius:12px;
+      transition:background .15s,transform .15s;-webkit-tap-highlight-color:transparent;
+    }
+    .nav-item:active{transform:scale(.92)}
+    .nav-item.active{background:var(--primary-bg)}
+    .nav-icon{font-size:22px;line-height:1;transition:transform .25s}
+    .nav-item.active .nav-icon{transform:scale(1.1)}
+    .nav-label{font-size:11px;font-weight:500;color:var(--muted);transition:color .15s}
+    .nav-item.active .nav-label{color:var(--primary);font-weight:700}
+
+    /* ─── HEADERS ────────────────────────────────────────────────────────── */
+    .header-dark{
+      background:var(--dark);color:#fff;
+      padding:48px 16px 20px;border-radius:0 0 20px 20px;
+    }
+    .header-sub{color:#6B7A99;font-size:13px;display:block;margin-bottom:4px}
+    .header-title{font-size:22px;font-weight:700;display:block;margin-bottom:14px;color:#fff}
+
+    /* ─── SEARCH ─────────────────────────────────────────────────────────── */
+    .search-box{
+      background:var(--surface);border-radius:999px;
+      display:flex;align-items:center;gap:8px;padding:10px 16px;
+      transition:box-shadow .15s;
+    }
+    .search-box:focus-within{box-shadow:0 0 0 2px var(--primary)}
+    .search-box input{
+      border:none;outline:none;width:100%;font-family:'Poppins',sans-serif;
+      font-size:14px;color:var(--text);background:transparent;
+    }
+
+    /* ─── SECTIONS ───────────────────────────────────────────────────────── */
+    .section{padding:16px}
+    .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .section-title{font-weight:700;font-size:15px;color:var(--text)}
+    .section-link{color:var(--primary);font-size:13px;font-weight:500;cursor:pointer}
+    .section-link:hover{opacity:.75}
+
+    /* ─── CATEGORIES ─────────────────────────────────────────────────────── */
+    .cats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .cat-item{
+      background:var(--surface);border:1px solid var(--border);border-radius:12px;
+      padding:10px 6px;text-align:center;cursor:pointer;
+      transition:transform .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;
+    }
+    .cat-item:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.1)}
+    .cat-item:active{transform:scale(.95)}
+    .cat-icon{
+      width:42px;height:42px;border-radius:10px;display:flex;align-items:center;
+      justify-content:center;margin:0 auto 6px;font-size:20px;
+    }
+    .cat-icon.rose{background:var(--primary-bg)}
+    .cat-icon.blue{background:var(--blue-bg)}
+    .cat-label{font-size:11px;font-weight:500;color:var(--text)}
+
+    /* ─── BANNER ─────────────────────────────────────────────────────────── */
+    .banner{background:var(--dark);border-radius:14px;margin:0 16px 4px;padding:16px;color:#fff}
+    .banner-tag{
+      background:var(--primary);display:inline-block;padding:4px 10px;
+      border-radius:6px;font-size:12px;font-weight:700;margin-bottom:8px;
+    }
+    .banner-text{font-size:15px;font-weight:700}
+
+    /* ─── EVENT MINI ─────────────────────────────────────────────────────── */
+    .evento-mini{
+      background:var(--surface);border:1px solid var(--border);border-radius:14px;
+      padding:12px;display:flex;gap:12px;align-items:center;
+      cursor:pointer;transition:box-shadow .15s,transform .15s;
+    }
+    .evento-mini:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+    .evento-mini:active{transform:scale(.98)}
+    .date-box{
+      background:var(--primary-bg);padding:10px 12px;border-radius:10px;
+      text-align:center;color:var(--primary);min-width:52px;
+    }
+    .date-dia{font-size:22px;font-weight:800;line-height:1}
+    .date-mes{font-size:11px;font-weight:600}
+    .evento-titulo{font-weight:700;font-size:14px;margin-bottom:4px}
+    .evento-local{color:var(--muted);font-size:12px;display:flex;gap:4px;align-items:center}
+
+    /* ─── BADGES ─────────────────────────────────────────────────────────── */
+    .status-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap}
+    .status-andamento{background:var(--green-bg);color:var(--green)}
+    .status-breve{background:var(--primary-bg);color:var(--primary)}
+    .badge-aberto{background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;display:flex;align-items:center;gap:4px}
+    .badge-fechado{background:#F3F4F6;color:#9CA3AF;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px}
+    .tag-verde{background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
+    .tag-azul{background:var(--blue-bg);color:var(--blue);font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px}
+
+    /* ─── STORE CARD ─────────────────────────────────────────────────────── */
+    .loja-card{
+      background:var(--surface);margin:0 16px 10px;border-radius:14px;
+      padding:14px;display:flex;gap:12px;cursor:pointer;
+      border:1px solid var(--border);transition:box-shadow .15s,transform .15s;
+    }
+    .loja-card:first-child{margin-top:4px}
+    .loja-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+    .loja-card:active{transform:scale(.98)}
+    .loja-img{
+      width:80px;height:80px;border-radius:12px;background:var(--primary-bg);
+      display:flex;align-items:center;justify-content:center;font-size:36px;flex-shrink:0;
+    }
+    .loja-info{flex:1}
+    .loja-nome{font-weight:700;font-size:15px;margin-bottom:2px}
+    .loja-cat{color:var(--muted);font-size:12px;margin-bottom:6px}
+    .loja-status-row{display:flex;gap:8px;align-items:center;margin-bottom:4px}
+    .fecha-txt{font-size:12px;color:var(--muted)}
+    .loja-end{font-size:12px;color:var(--muted);display:flex;gap:4px;align-items:center}
+    .loja-tel{font-size:12px;color:var(--muted);margin-top:2px}
+
+    /* ─── BUSCA ──────────────────────────────────────────────────────────── */
+    .busca-header{background:var(--dark);padding:48px 16px 16px;display:flex;flex-direction:column;gap:12px}
+    .busca-row{display:flex;gap:10px;align-items:center}
+    .back-btn{
+      width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.12);
+      display:flex;align-items:center;justify-content:center;cursor:pointer;
+      font-size:18px;border:none;color:#fff;flex-shrink:0;font-family:'Poppins',sans-serif;
+      transition:background .15s,transform .15s;
+    }
+    .back-btn:hover{background:rgba(255,255,255,.22)}
+    .back-btn:active{transform:scale(.9)}
+    .busca-input{
+      flex:1;background:var(--surface);border-radius:999px;padding:10px 16px;
+      border:none;outline:none;font-family:'Poppins',sans-serif;font-size:14px;
+    }
+    .filtros{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+    .filtros::-webkit-scrollbar{display:none}
+    .filtro{
+      padding:6px 16px;border-radius:999px;border:1.5px solid var(--border);
+      font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;
+      background:var(--surface);color:var(--text);transition:all .15s;
+      font-family:'Poppins',sans-serif;
+    }
+    .filtro:hover{border-color:var(--primary);color:var(--primary)}
+    .filtro.ativo{background:var(--primary);border-color:var(--primary);color:#fff}
+    .filtro:active{transform:scale(.95)}
+    .resultado-info{padding:12px 16px;color:var(--muted);font-size:13px}
+    .busca-lista{padding-top:8px}
+
+    /* ─── SUGESTÃO ───────────────────────────────────────────────────────── */
+    .sugestao-banner{
+      margin:4px 16px 10px;background:var(--primary-bg);border-radius:12px;
+      padding:12px 16px;color:var(--primary);font-weight:700;font-size:14px;text-align:center;
+    }
+    .sugestao-card{
+      background:var(--surface);margin:0 16px 8px;border-radius:12px;padding:12px;
+      display:flex;gap:12px;align-items:center;border:1px solid var(--border);
+      cursor:pointer;transition:box-shadow .15s;
+    }
+    .sugestao-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.06)}
+    .sugestao-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+    .sugestao-nome{font-weight:700;font-size:14px}
+    .sugestao-sub{font-size:12px;color:var(--muted)}
+
+    /* ─── EVENTOS ────────────────────────────────────────────────────────── */
+    .eventos-header{background:var(--dark);color:#fff;padding:48px 16px 20px}
+    .eventos-titulo{font-size:24px;font-weight:800;margin-bottom:2px}
+    .eventos-sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+    .evt-filtros{display:flex;gap:8px;overflow-x:auto}
+    .evt-filtros::-webkit-scrollbar{display:none}
+    .evt-filtro{
+      padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;
+      cursor:pointer;white-space:nowrap;border:none;font-family:'Poppins',sans-serif;
+      background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);transition:all .15s;
+    }
+    .evt-filtro.ativo{background:var(--primary);color:#fff}
+    .evt-filtro:active{transform:scale(.95)}
+    .day-label{
+      font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);
+      padding:16px 16px 8px;text-transform:uppercase;
+    }
+    .evt-card{
+      background:var(--surface);margin:0 16px 10px;border-radius:14px;
+      display:flex;gap:12px;padding:14px;cursor:pointer;
+      border:1px solid var(--border);transition:box-shadow .15s,transform .15s;
+    }
+    .evt-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+    .evt-card:active{transform:scale(.98)}
+    .evt-thumb{width:80px;height:80px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:36px;flex-shrink:0}
+    .evt-tipo{font-size:11px;font-weight:700;margin-bottom:3px}
+    .evt-nome{font-size:15px;font-weight:700;margin-bottom:4px}
+    .evt-meta{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
+
+    /* ─── PERFIL LOJA ────────────────────────────────────────────────────── */
+    .perfil-hero{position:relative;height:180px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+    .perfil-bg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:80px;opacity:.3}
+    .perfil-overlay{position:absolute;inset:0}
+    .perfil-actions{position:absolute;top:14px;left:0;right:0;display:flex;justify-content:space-between;padding:0 14px}
+    .perfil-btn{
+      width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.35);
+      display:flex;align-items:center;justify-content:center;cursor:pointer;
+      color:#fff;font-size:16px;border:none;backdrop-filter:blur(4px);
+      transition:background .15s,transform .15s;font-family:'Poppins',sans-serif;
+    }
+    .perfil-btn:hover{background:rgba(0,0,0,.55)}
+    .perfil-btn:active{transform:scale(.9)}
+    .perfil-banner-tag{
+      position:absolute;bottom:0;left:0;right:0;padding:12px 16px;
+      color:#fff;font-size:15px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+    }
+    .perfil-body{background:var(--surface);padding:16px}
+    .perfil-nome{font-size:20px;font-weight:800}
+    .perfil-cat{color:var(--muted);font-size:13px;margin-bottom:10px}
+    .perfil-row{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+    .perfil-end{color:var(--muted);font-size:13px}
+    .divider{height:1px;background:#F0F0F0;margin:14px 0}
+    .oferta-box{
+      background:var(--dark);border-radius:14px;padding:16px;
+      display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;
+    }
+    .oferta-tag{background:var(--primary);font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;color:#fff;display:inline-block;margin-bottom:6px}
+    .oferta-titulo{color:#fff;font-size:16px;font-weight:700}
+    .oferta-detalhe{color:rgba(255,255,255,.6);font-size:12px;margin-top:2px}
+    .oferta-circle{width:60px;height:60px;border-radius:50%;background:rgba(255,91,48,.3);flex-shrink:0}
+    .mapa-mini{border-radius:14px;overflow:hidden;margin-bottom:14px;height:120px;background:#C8E6C9;position:relative;display:flex;align-items:center;justify-content:center}
+    .mapa-mini-inner{font-size:40px;opacity:.5}
+    .como-chegar{
+      position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+      background:var(--primary);color:#fff;padding:8px 24px;border-radius:999px;
+      font-size:13px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;
+      font-family:'Poppins',sans-serif;transition:opacity .15s,transform .15s;
+    }
+    .como-chegar:active{transform:translateX(-50%) scale(.96)}
+    .perto-title{font-size:15px;font-weight:700;margin-bottom:2px}
+    .perto-sub{color:var(--muted);font-size:12px;margin-bottom:10px}
+    .perto-item{
+      display:flex;gap:12px;align-items:center;padding:12px;
+      background:#F8F8F8;border-radius:12px;margin-bottom:8px;cursor:pointer;
+      transition:background .15s;
+    }
+    .perto-item:hover{background:#F0F0F0}
+    .perto-icon{width:44px;height:44px;border-radius:10px;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+    .perto-nome{font-size:14px;font-weight:600}
+    .perto-dist{font-size:12px;color:var(--muted)}
+    .perto-arrow{color:var(--muted);font-size:14px;margin-left:auto}
+
+    /* ─── MAPA / EXPLORAR ────────────────────────────────────────────────── */
+    .mapa-header{background:var(--dark);color:#fff;padding:48px 16px 16px;border-radius:0 0 20px 20px}
+    .mapa-titulo{font-size:20px;font-weight:700;margin-bottom:12px}
+    .mapa-filtros{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+    .mapa-filtro{
+      display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;
+      border:1.5px solid;font-size:12px;font-weight:600;cursor:pointer;
+      background:transparent;transition:all .15s;font-family:'Poppins',sans-serif;
+      color:rgba(255,255,255,.8);
+    }
+    .mapa-filtro.ativo{color:#fff}
+    .mapa-filtro:active{transform:scale(.95)}
+    .dot{width:8px;height:8px;border-radius:50%}
+    #leaflet-map{flex:1;min-height:420px;z-index:0}
+
+    /* Leaflet popup */
+    .leaflet-popup-content-wrapper{border-radius:12px !important;box-shadow:0 4px 20px rgba(0,0,0,.15) !important;padding:0 !important}
+    .leaflet-popup-content{margin:0 !important}
+    .popup-inner{padding:10px 14px;min-width:160px}
+    .popup-nome{font-weight:700;font-size:13px;margin-bottom:2px;font-family:'Poppins',sans-serif}
+    .popup-sub{color:var(--muted);font-size:11px;font-family:'Poppins',sans-serif}
+
+    /* ─── EMPTY / ANIMAÇÕES ──────────────────────────────────────────────── */
+    .empty-state{padding:40px 20px;text-align:center;color:var(--muted)}
+    .empty-state-icon{font-size:40px;margin-bottom:10px}
+    .empty-state-title{font-weight:600;margin-bottom:4px;color:var(--text)}
+    .empty-state-sub{font-size:13px}
+
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    .animate-in{animation:fadeInUp 300ms ease forwards}
+    .animate-in:nth-child(1){animation-delay:0ms}
+    .animate-in:nth-child(2){animation-delay:60ms}
+    .animate-in:nth-child(3){animation-delay:120ms}
+    .animate-in:nth-child(4){animation-delay:180ms}
+    .animate-in:nth-child(5){animation-delay:240ms}
+    .animate-in:nth-child(6){animation-delay:300ms}
+  </style>
 </head>
 <body>
+  <div id="root"></div>
 
-<div class="container">
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- React 18 -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel (transpila JSX inline) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- CABEÇALHO -->
-    <header class="cabecalho">
-        <span class="cab1">Bom dia, Aracaju ☀️</span>
-        <span class="cab2">O que você procura hoje?</span>
+  <script type="text/babel">
+    const { useState, useEffect, useRef, Fragment } = React;
 
-        <!-- FORMULÁRIO DE BUSCA -->
-        <form class="input_pesquisa" id="formBusca">
-            <img src="assets/lupa.png">
-            <input 
-                type="text" 
-                id="campoBusca"
-                placeholder="Tênis, corte de cabelo, lojas...">
-        </form>
-    </header>
+    /* ════════════════════════════════════════════════════════════════════════
+       data/lojas.js
+    ════════════════════════════════════════════════════════════════════════ */
+    const LOJAS = [
+      { id:1, nome:"Calçados Sergipe",    categoria:"Vestuário • Calçados e Acessórios", cat:"moda",        aberto:true,  fecha:"20h", endereco:"R. Laranjeiras, 120 — Centro",    contato:"(79) 99999-9999", emoji:"👠", oferta:"10% OFF em qualquer tênis",              ofertaDetalhe:"Mostre o app na compra",       lat:-10.9162, lng:-37.0491, cor:"#FF5B30" },
+      { id:2, nome:"Moda Feminina Aju",   categoria:"Vestuário • Calçados e Acessórios", cat:"moda",        aberto:true,  fecha:"20h", endereco:"R. Laranjeiras, 285 — Centro",    contato:"(79) 98888-7777", emoji:"👡", oferta:"Leve 3, pague 2 em blusas",             ofertaDetalhe:"Apenas hoje no app",           lat:-10.9175, lng:-37.0480, cor:"#FF5B30" },
+      { id:3, nome:"Café Beira Rio",      categoria:"Alimentação • Cafeteria",           cat:"alimentacao", aberto:true,  fecha:"22h", endereco:"Av. Ivo do Prado, 50 — Centro",   contato:"(79) 97777-5555", emoji:"☕", oferta:"Café + pão de queijo por R$ 9",         ofertaDetalhe:"Das 14h às 17h",               lat:-10.9150, lng:-37.0510, cor:"#6B7A99" },
+      { id:4, nome:"Ótica Visão Clara",   categoria:"Saúde • Ótica",                    cat:"outros",      aberto:true,  fecha:"19h", endereco:"R. João Pessoa, 340 — Centro",    contato:"(79) 96666-4444", emoji:"👓", oferta:"2ª armação com 50% OFF",                ofertaDetalhe:"Na compra de qualquer lente",  lat:-10.9185, lng:-37.0465, cor:"#6B48FF" },
+      { id:5, nome:"Barbearia Central",   categoria:"Beleza • Barbearia",               cat:"beleza",      aberto:false, fecha:"18h", endereco:"R. Itabaianinha, 77 — Centro",    contato:"(79) 95555-3333", emoji:"💈", oferta:"Corte + barba por R$ 35",               ofertaDetalhe:"Agendamento pelo app",         lat:-10.9200, lng:-37.0472, cor:"#FF5B30" },
+      { id:6, nome:"Eletrônicos Aju Tech",categoria:"Eletrônicos • Informática",        cat:"eletronicos", aberto:true,  fecha:"20h", endereco:"R. Laranjeiras, 410 — Centro",    contato:"(79) 94444-2222", emoji:"📱", oferta:"Capinha de brinde na compra de celular", ofertaDetalhe:"Estoque limitado",             lat:-10.9190, lng:-37.0455, cor:"#3B82F6" },
+    ];
 
-    <!-- CATEGORIAS -->
-    <section class="categorias">
-        <div class="categorias_topo">
-            <span class="cat_titulo1">Lojas por categoria</span>
-            <span class="cat_titulo2">Ver todos</span>
-        </div>
+    /* ════════════════════════════════════════════════════════════════════════
+       data/eventos.js
+    ════════════════════════════════════════════════════════════════════════ */
+    const EVENTOS = [
+      { id:1, titulo:"Feira Cultural de Aracaju",      tipo:"CULTURAL",    local:"Praça Fausto Cardoso",    horario:"16h – 22h", data:"2025-03-21", status:"andamento", emoji:"🎪", gratuito:true,  lat:-10.9155, lng:-37.0498, cor:"#FF5B30" },
+      { id:2, titulo:"Exposição: Olhares Sergipanos",  tipo:"ARTE",        local:"Museu da Gente Sergipana",horario:"Até 21h",   data:"2025-03-21", status:"andamento", emoji:"🎨", gratuito:false, lat:-10.9168, lng:-37.0502, cor:"#8B5CF6" },
+      { id:3, titulo:"Noite do Forró Sergipano",       tipo:"MÚSICA",      local:"Centro Cultural",          horario:"19h – 23h", data:"2025-03-22", status:"breve",     emoji:"🎵", gratuito:true,  lat:-10.9145, lng:-37.0488, cor:"#10B981" },
+      { id:4, titulo:"Festival da Culinária Sergipana",tipo:"GASTRONOMIA", local:"Mercado Municipal",        horario:"11h – 18h", data:"2025-03-22", status:"breve",     emoji:"🍲", gratuito:false, lat:-10.9178, lng:-37.0515, cor:"#F59E0B" },
+      { id:5, titulo:"Feira de Artesanato Sergipano",  tipo:"CULTURAL",    local:"Praça General Valadão",   horario:"08h – 14h", data:"2025-03-23", status:"breve",     emoji:"🧶", gratuito:true,  lat:-10.9160, lng:-37.0476, cor:"#FF5B30" },
+    ];
 
-        <div class="cat_button">
+    /* ════════════════════════════════════════════════════════════════════════
+       data/utilidades.js
+    ════════════════════════════════════════════════════════════════════════ */
+    const UTILIDADES = [
+      { tipo:"estacionamento", label:"Estacionamento Valadão",      lat:-10.9158, lng:-37.0468, cor:"#22C55E" },
+      { tipo:"estacionamento", label:"Estacionamento Central",       lat:-10.9195, lng:-37.0500, cor:"#22C55E" },
+      { tipo:"seguranca",      label:"Posto da Guarda Municipal",    lat:-10.9170, lng:-37.0483, cor:"#3B82F6" },
+      { tipo:"seguranca",      label:"Delegacia do Centro",          lat:-10.9183, lng:-37.0460, cor:"#3B82F6" },
+      { tipo:"banheiro",       label:"Banheiro Público — Valadão",   lat:-10.9165, lng:-37.0494, cor:"#8B5CF6" },
+      { tipo:"bebedouro",      label:"Bebedouro — Mercado",          lat:-10.9178, lng:-37.0512, cor:"#06B6D4" },
+    ];
+    const CATEGORIAS_MAPA = [
+      { key:"estacionamento", label:"Estacionamento", cor:"#22C55E" },
+      { key:"seguranca",      label:"Segurança",       cor:"#3B82F6" },
+      { key:"evento",         label:"Evento",           cor:"#8B5CF6" },
+    ];
 
-            <div class="cat_button_item">
-                <div class="cat_icon rose">
-                    <img src="assets/cabide.png">
-                </div>
-                <span>Moda</span>
-            </div>
-
-            <div class="cat_button_item">
-                <div class="cat_icon blue">
-                    <img src="assets/talheres.png">
-                </div>
-                <span>Alimentação</span>
-            </div>
-
-            <div class="cat_button_item">
-                <div class="cat_icon blue">
-                    <img src="assets/batom.png">
-                </div>
-                <span>Beleza</span>
-            </div>
-
-            <div class="cat_button_item">
-                <div class="cat_icon rose">
-                    <img src="assets/iphone.png">
-                </div>
-                <span>Eletrônicos</span>
-            </div>
-
-        </div>
-    </section>
-
-    <!-- ANÚNCIO -->
-    <section class="anuncio">
-        <div class="anuncio_titulo">Black Friday</div>
-        <div class="anuncio_corpo">Desconto que você só encontra no centro!</div>
-    </section>
-
-    <!-- EVENTOS -->
-    <section class="destaque">
-        <span class="destaque1">Hoje no centro</span>
-        <span class="destaque2">Ver agenda</span>
-    </section>
-
-    <section class="anuncio_destaque">
-        <div class="date_box">
-            <div class="date_dia">21</div>
-            <div>Mar</div>
-        </div>
-
-        <div>
-            <div class="evento_titulo">Feira cultural de Aracaju</div>
-            <div class="evento_local">
-                <div>
-                <img src="assets/alfinete.png">
-                Praça Fausto Cardoso    
-                </div>
-                <div class="horas">
-                • 16h - 22h
-                </div>
-                 
-            </div>
-        </div>
-
-        <div class="status_evento">Em andamento</div>
-    </section>
-
-</div>
-
-<!-- NAVEGAÇÃO -->
-<nav class="navegacao">
-    <div class="nav_item">
-        <div>
-            <img src="assets/botao-de-inicio.png">
-        </div>
-        <div>
-            <span>Início</span>
-        </div>
-    </div>
-
-    <div class="nav_item">
-        <div>
-            <img src="assets/mapa.png">
-        </div>
-        <div>
-            <span>Explorar</span>
-        </div>
-    </div>
-
-    <div class="nav_item">
-        <div>
-            <img src="assets/calendario.png">
-        </div>
-        <div>
-            <span>Eventos</span>
-        </div>
-    </div>
-
-    <div class="nav_item">
-        <div>
-            <img src="assets/lupa2.png">
-        </div>
-        <div>
-            <span>Busca</span>
-        </div>
-    </div>
-</nav>
-
-<!-- SCRIPT DE BUSCA -->
-<script>
-document.getElementById("formBusca").addEventListener("submit", function(event) {
-    event.preventDefault();
-
-    const termo = document.getElementById("campoBusca").value;
-
-    if (termo.trim() !== "") {
-        window.location.href = "index copy.html?q=" + encodeURIComponent(termo);
+    /* ════════════════════════════════════════════════════════════════════════
+       hooks/useScreenTransition.js
+    ════════════════════════════════════════════════════════════════════════ */
+    function useScreenTransition() {
+      const [visible, setVisible] = useState(false);
+      useEffect(() => {
+        const t = setTimeout(() => setVisible(true), 10);
+        return () => clearTimeout(t);
+      }, []);
+      return { visible };
     }
-});
-</script>
 
+    /* ════════════════════════════════════════════════════════════════════════
+       components/StatusBadge.jsx
+    ════════════════════════════════════════════════════════════════════════ */
+    function EventStatusBadge({ status }) {
+      return status === "andamento"
+        ? <span className="status-badge status-andamento">Em andamento</span>
+        : <span className="status-badge status-breve">Em breve</span>;
+    }
+
+    function StoreStatusBadge({ aberto, fecha }) {
+      return (
+        <div className="loja-status-row">
+          {aberto
+            ? <span className="badge-aberto">● Aberto agora</span>
+            : <span className="badge-fechado">● Fechado</span>}
+          <span className="fecha-txt">Fecha às {fecha}</span>
+        </div>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════
+       components/StoreCard.jsx
+    ════════════════════════════════════════════════════════════════════════ */
+    function StoreCard({ loja, onClick }) {
+      return (
+        <div className="loja-card animate-in" onClick={onClick}>
+          <div className="loja-img">{loja.emoji}</div>
+          <div className="loja-info">
+            <div className="loja-nome">{loja.nome}</div>
+            <div className="loja-cat">{loja.categoria}</div>
+            <StoreStatusBadge aberto={loja.aberto} fecha={loja.fecha} />
+            <div className="loja-end">📍 {loja.endereco}</div>
+            <div className="loja-tel">{loja.contato}</div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════
+       components/EventMiniCard.jsx
+    ════════════════════════════════════════════════════════════════════════ */
+    const MONTH_SHORT = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
+    function EventMiniCard({ evento, onClick }) {
+      const [, month, day] = evento.data.split("-");
+      const dia = parseInt(day, 10);
+      const mes = MONTH_SHORT[parseInt(month, 10) - 1];
+      return (
+        <div className="evento-mini animate-in" onClick={onClick}>
+          <div className="date-box">
+            <div className="date-dia">{dia}</div>
+            <div className="date-mes">{mes}</div>
+          </div>
+          <div className="evento-info" style={{flex:1}}>
+            <div className="evento-titulo">{evento.titulo}</div>
+            <div className="evento-local">📍 {evento.local} · {evento.horario}</div>
+          </div>
+          <EventStatusBadge status={evento.status} />
+        </div>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════
+       components/NavBar.jsx
+    ════════════════════════════════════════════════════════════════════════ */
+    const NAV_ITEMS = [
+      { id:"inicio",   label:"Início",   icon:"🏠" },
+      { id:"explorar", label:"Explorar", icon:"🗺"  },
+      { id:"eventos",  label:"Eventos",  icon:"📅" },
+      { id:"buscar",   label:"Buscar",   icon:"🔍" },
+    ];
+    function NavBar({ aba, setAba }) {
+      return (
+        <nav className="nav">
+          {NAV_ITEMS.map(item => (
+            <div key={item.id}
+              className={`nav-item${aba === item.id ? " active" : ""}`}
+              onClick={() => setAba(item.id)}>
+              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-label">{item.label}</span>
+            </div>
+          ))}
+        </nav>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════
+       screens/TelaInicio.jsx
+    ════════════════════════════════════════════════════════════════════════ */
+    const CATEGORIAS_HOME = [
+      { id:"moda",        label:"Moda",       icon:"👗", cls:"rose" },
+      { id:"alimentacao", label:"Alimentação", icon:"🍽", cls:"blue" },
+      { id:"beleza",      label:"Beleza",      icon:"💄", cls:"rose" },
+      { id:"eletronicos", label:"Eletrônicos", icon:"📱", cls:"blue" },
+    ];
+
+    function TelaInicio({ setAba, setBuscaTermo }) {
+      const { visible } = useScreenTransition();
+      const hora = new Date().getHours();
+      const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+      const eventosHoje = EVENTOS.filter(e => e.data === "2025-03-21");
+
+      return (
+        <div className={`screen-wrapper${visible ? " visible" : ""}`}>
+          <div className="screen">
+            <div className="header-dark">
+              <span className="header-sub">{saudacao}, Aracaju ☀️</span>
+              <span className="header-title">O que você procura hoje?</span>
+              <div className="search-box" style={{cursor:"pointer"}} onClick={() => setAba("buscar")}>
+                <span>🔍</span>
+                <input readOnly placeholder="Tênis, corte de cabelo, loja..."/>
+              </div>
+            </div>
+
+            <div className="section">
+              <div className="section-header">
+                <span className="section-title">Encontre lojas por categorias</span>
+                <span className="section-link" onClick={() => setAba("buscar")}>Ver todas</span>
+              </div>
+              <div className="cats-grid">
+                {CATEGORIAS_HOME.map(cat => (
+                  <div key={cat.id} className="cat-item animate-in"
+                    onClick={() => { setBuscaTermo(cat.label); setAba("buscar"); }}>
+                    <div className={`cat-icon ${cat.cls}`}>{cat.icon}</div>
+                    <div className="cat-label">{cat.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="banner">
+              <div className="banner-tag">Black Friday</div>
+              <div className="banner-text">Descontos que você só encontra no centro!</div>
+            </div>
+
+            <div className="section">
+              <div className="section-header">
+                <span className="section-title">Hoje no centro</span>
+                <span className="section-link" onClick={() => setAba("eventos")}>Ver agenda</span>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {eventosHoje.map(ev => (
+                  <EventMiniCard key={ev.id} evento={ev} onClick={() => setAba("eventos")}/>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════
+       screens/TelaMapa.jsx  — OpenStreetMap via Leaflet (sem API key)
+    ════════════════════════════════════════════════════════════════════════ */
+    function TelaMapa({ setLojaAtual }) {
+      const { visible } = useScreenTransition();
+      const mapRef     = useRef(null);
+      const leafletRef = useRef(null);
+      const markersRef = useRef([]);
+      const [busca,   setBusca]   = useState("");
+      const [filtros, setFiltros] = useState({ estacionamento:true, seguranca:true, evento:true });
+
+      // Inicializa mapa Leaflet
+      useEffect(() => {
+        if (!window.L || leafletRef.current) return;
+        const L = window.L;
+        const map = L.map(mapRef.current, { center:[-10.9162,-37.0492], zoom:16 });
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution:'© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
+          maxZoom:19,
+        }).addTo(map);
+        leafletRef.current = map;
+        return () => { map.remove(); leafletRef.current = null; };
+      }, []);
+
+      // Helpers de ícone
+      function pinIcon(cor, emoji) {
+        return window.L.divIcon({
+          className:"",
+          html:`<div style="width:34px;height:34px;border-radius:50%;background:${cor};
+            border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);
+            display:flex;align-items:center;justify-content:center;font-size:14px">${emoji}</div>`,
+          iconSize:[34,34], iconAnchor:[17,17],
+        });
+      }
+      function storePinIcon(emoji) {
+        return window.L.divIcon({
+          className:"",
+          html:`<div style="width:40px;height:40px;border-radius:50%;background:#FF5B30;
+            border:3px solid #fff;box-shadow:0 2px 10px rgba(255,91,48,.4);
+            display:flex;align-items:center;justify-content:center;font-size:18px">${emoji}</div>`,
+          iconSize:[40,40], iconAnchor:[20,20],
+        });
+      }
+
+      // Atualiza marcadores
+      useEffect(() => {
+        const L = window.L;
+        const map = leafletRef.current;
+        if (!L || !map) return;
+
+        markersRef.current.forEach(m => map.removeLayer(m));
+        markersRef.current = [];
+
+        function add(lat, lng, icon, html) {
+          const m = L.marker([lat,lng],{icon}).bindPopup(html,{maxWidth:220}).addTo(map);
+          markersRef.current.push(m);
+          return m;
+        }
+
+        if (filtros.estacionamento)
+          UTILIDADES.filter(u => u.tipo==="estacionamento").forEach(u =>
+            add(u.lat, u.lng, pinIcon("#22C55E","🅿"),
+              `<div class="popup-inner"><div class="popup-nome">${u.label}</div><div class="popup-sub">Estacionamento</div></div>`));
+
+        if (filtros.seguranca)
+          UTILIDADES.filter(u => u.tipo==="seguranca").forEach(u =>
+            add(u.lat, u.lng, pinIcon("#3B82F6","🛡"),
+              `<div class="popup-inner"><div class="popup-nome">${u.label}</div><div class="popup-sub">Segurança</div></div>`));
+
+        UTILIDADES.filter(u => u.tipo==="banheiro"||u.tipo==="bebedouro").forEach(u =>
+          add(u.lat, u.lng, pinIcon("#8B5CF6", u.tipo==="banheiro"?"🚻":"💧"),
+            `<div class="popup-inner"><div class="popup-nome">${u.label}</div><div class="popup-sub">${u.tipo==="banheiro"?"Banheiro público":"Bebedouro"} • Gratuito</div></div>`));
+
+        if (filtros.evento)
+          EVENTOS.forEach(ev =>
+            add(ev.lat, ev.lng, pinIcon("#8B5CF6", ev.emoji),
+              `<div class="popup-inner"><div class="popup-nome">${ev.titulo}</div><div class="popup-sub">${ev.local} • ${ev.horario}</div></div>`));
+
+        const termo = busca.trim().toLowerCase();
+        const lojasFiltradas = termo.length >= 2
+          ? LOJAS.filter(l => l.nome.toLowerCase().includes(termo) || l.categoria.toLowerCase().includes(termo))
+          : LOJAS;
+
+        lojasFiltradas.forEach(loja => {
+          const popupId = `ver-loja-${loja.id}-${Date.now()}`;
+          const m = L.marker([loja.lat,loja.lng],{icon:storePinIcon(loja.emoji)})
+            .bindPopup(`<div class="popup-inner">
+              <div class="popup-nome">${loja.nome}</div>
+              <div class="popup-sub">${loja.categoria}</div>
+              <div style="margin-top:8px">
+                <span style="background:${loja.aberto?"#E8FDF1":"#F3F4F6"};color:${loja.aberto?"#18B868":"#9CA3AF"};
+                  font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;font-family:Poppins,sans-serif">
+                  ${loja.aberto?"● Aberto":"● Fechado"}
+                </span>
+              </div>
+              <button id="${popupId}" style="margin-top:8px;width:100%;padding:6px;background:#FF5B30;
+                color:#fff;border:none;border-radius:8px;font-family:Poppins,sans-serif;
+                font-size:12px;font-weight:700;cursor:pointer">
+                Ver loja →
+              </button>
+            </div>`, {maxWidth:220})
+            .addTo(map);
+
+          m.on("popupopen", () => {
+            setTimeout(() => {
+              const btn = document.getElementById(popupId);
+              if (btn) btn.onclick = () => { map.closePopup(); setLojaAtual(loja); };
+            }, 50);
+          });
+          markersRef.current.push(m);
+        });
+      }, [filtros, busca]);
+
+      return (
+        <div className={`screen-wrapper${visible ? " visible" : ""}`} style={{display:"flex",flexDirection:"column"}}>
+          <div className="mapa-header">
+            <div className="mapa-titulo">O que você precisa encontrar?</div>
+            <div className="search-box">
+              <span>🔍</span>
+              <input placeholder="Buscar no mapa..."
+                value={busca} onChange={e => setBusca(e.target.value)}
+                style={{background:"transparent",border:"none",outline:"none",width:"100%",fontFamily:"Poppins,sans-serif",fontSize:14}}/>
+              {busca && <span style={{cursor:"pointer",color:"#6B7A99",fontSize:18}} onClick={() => setBusca("")}>×</span>}
+            </div>
+            <div className="mapa-filtros">
+              {CATEGORIAS_MAPA.map(f => (
+                <button key={f.key}
+                  className={`mapa-filtro${filtros[f.key]?" ativo":""}`}
+                  style={{borderColor:f.cor,...(filtros[f.key]?{background:f.cor}:{})}}
+                  onClick={() => setFiltros(prev => ({...prev,[f.key]:!prev[f.key]}))}>
+                  <span className="dot" style={{background:filtros[f.key]?"#fff":f.cor}}/>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div ref={mapRef} id="leaflet-map"/>
+        </div>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════
+       screens/TelaEventos.jsx
+    ════════════════════════════════════════════════════════════════════════ */
+    const FILTROS_EVENTOS = ["Todos","Cultural","Arte","Música","Gastronomia"];
+    const COR_TIPO = { CULTURAL:"#FF5B30", ARTE:"#8B5CF6", "MÚSICA":"#10B981", GASTRONOMIA:"#F59E0B" };
+    const DAY_LABELS = {
+      "2025-03-21":"Hoje — 21 de Março",
+      "2025-03-22":"Amanhã — 22 de Março",
+      "2025-03-23":"23 de Março",
+    };
+
+    function TelaEventos() {
+      const { visible } = useScreenTransition();
+      const [filtro, setFiltro] = useState("Todos");
+      const filtrados = filtro === "Todos" ? EVENTOS
+        : EVENTOS.filter(e => e.tipo.toLowerCase() === filtro.toLowerCase());
+      const grupos = Object.entries(DAY_LABELS).reduce((acc,[data,label]) => {
+        const items = filtrados.filter(e => e.data === data);
+        if (items.length) acc.push({label,items});
+        return acc;
+      },[]);
+
+      return (
+        <div className={`screen-wrapper${visible?" visible":""}`}>
+          <div className="screen">
+            <div className="eventos-header">
+              <div className="eventos-titulo">Agenda Cultural</div>
+              <div className="eventos-sub">Centro de Aracaju — Mar 2025</div>
+              <div className="evt-filtros">
+                {FILTROS_EVENTOS.map(f => (
+                  <button key={f} className={`evt-filtro${filtro===f?" ativo":""}`} onClick={() => setFiltro(f)}>{f}</button>
+                ))}
+              </div>
+            </div>
+            {grupos.length > 0 ? grupos.map(({label,items}) => (
+              <Fragment key={label}>
+                <div className="day-label">{label}</div>
+                {items.map(ev => {
+                  const cor = COR_TIPO[ev.tipo] ?? "#FF5B30";
+                  return (
+                    <div key={ev.id} className="evt-card animate-in">
+                      <div className="evt-thumb" style={{background:cor+"22"}}>{ev.emoji}</div>
+                      <div style={{flex:1}}>
+                        <div className="evt-tipo" style={{color:cor}}>{ev.tipo}</div>
+                        <div className="evt-nome">{ev.titulo}</div>
+                        <div className="evt-meta">📍 {ev.local}</div>
+                        <div className="evt-meta" style={{marginTop:2}}>🕐 {ev.horario}</div>
+                        {ev.gratuito && <div style={{marginTop:6}}><span className="tag-verde">Gratuito</span></div>}
+                      </div>
+                      <div style={{alignSelf:"flex-start"}}><EventStatusBadge status={ev.status}/></div>
+                    </div>
+                  );
+                })}
+              </Fragment>
+            )) : (
+              <div className="empty-state">
+                <div className="empty-state-icon">📅</div>
+                <div className="empty-state-title">Nenhum evento encontrado</div>
+                <div className="empty-state-sub">Tente outro filtro de categoria.</div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════
+       screens/TelaBusca.jsx
+    ════════════════════════════════════════════════════════════════════════ */
+    const FILTROS_BUSCA = ["Todos","Produto","Serviço","Loja","Aberto agora"];
+
+    function TelaBusca({ termo, setTermo, setLojaAtual }) {
+      const { visible } = useScreenTransition();
+      const [filtro, setFiltro] = useState("Todos");
+      const resultados = LOJAS.filter(l => {
+        const ok = termo.length < 2
+          || l.nome.toLowerCase().includes(termo.toLowerCase())
+          || l.categoria.toLowerCase().includes(termo.toLowerCase());
+        if (!ok) return false;
+        if (filtro === "Aberto agora" && !l.aberto) return false;
+        return true;
+      });
+      const temResultados = resultados.length > 0 && termo.length >= 2;
+
+      return (
+        <div className={`screen-wrapper${visible?" visible":""}`}>
+          <div className="screen">
+            <div className="busca-header">
+              <div className="busca-row">
+                <button className="back-btn" onClick={() => setTermo("")}>←</button>
+                <input className="busca-input" autoFocus
+                  placeholder="🔍  Tênis, corte de cabelo, lojas..."
+                  value={termo} onChange={e => setTermo(e.target.value)}/>
+              </div>
+              <div className="filtros">
+                {FILTROS_BUSCA.map(f => (
+                  <div key={f} className={`filtro${filtro===f?" ativo":""}`} onClick={() => setFiltro(f)}>{f}</div>
+                ))}
+              </div>
+            </div>
+            {termo.length >= 2 && (
+              <div className="resultado-info">
+                {resultados.length} {resultados.length===1?"loja pode ter":"lojas podem ter"} esse item
+              </div>
+            )}
+            <div style={{paddingTop: termo.length < 2 ? 8 : 0}}>
+              {resultados.map(l => <StoreCard key={l.id} loja={l} onClick={() => setLojaAtual(l)}/>)}
+            </div>
+            {temResultados && (
+              <>
+                <div className="sugestao-banner">✨ Aproveite sua ida ao centro!</div>
+                {EVENTOS.slice(0,1).map(ev => (
+                  <div key={ev.id} className="sugestao-card animate-in">
+                    <div className="sugestao-icon" style={{background:"#FFF0EB"}}>{ev.emoji}</div>
+                    <div style={{flex:1}}>
+                      <div className="sugestao-nome">{ev.titulo}</div>
+                      <div className="sugestao-sub">Hoje • {ev.local}</div>
+                    </div>
+                    {ev.gratuito && <span className="tag-verde">Gratuito</span>}
+                  </div>
+                ))}
+                <div className="sugestao-card animate-in">
+                  <div className="sugestao-icon" style={{background:"#E8F0FF"}}>☕</div>
+                  <div style={{flex:1}}>
+                    <div className="sugestao-nome">Café Beira Rio</div>
+                    <div className="sugestao-sub">A 80m das lojas encontradas</div>
+                  </div>
+                  <span className="tag-azul">Parceiro</span>
+                </div>
+              </>
+            )}
+            {termo.length >= 2 && resultados.length === 0 && (
+              <div className="empty-state">
+                <div className="empty-state-icon">🔍</div>
+                <div className="empty-state-title">Nenhum resultado</div>
+                <div className="empty-state-sub">Tente buscar por outro termo ou categoria.</div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════
+       screens/TelaLoja.jsx
+    ════════════════════════════════════════════════════════════════════════ */
+    function TelaLoja({ loja, onVoltar, setAba }) {
+      const { visible } = useScreenTransition();
+      if (!loja) return null;
+      const eventosHoje = EVENTOS.filter(e => e.data === "2025-03-21");
+
+      return (
+        <div className={`screen-wrapper${visible?" visible":""}`}>
+          <div className="screen">
+            <div className="perfil-hero" style={{background:loja.cor+"33"}}>
+              <div className="perfil-bg">{loja.emoji}</div>
+              <div className="perfil-overlay"
+                style={{background:`linear-gradient(to bottom,transparent 40%,${loja.cor}CC)`}}/>
+              <div className="perfil-actions">
+                <button className="perfil-btn" onClick={onVoltar}>←</button>
+                <button className="perfil-btn">↗</button>
+              </div>
+              <div className="perfil-banner-tag" style={{background:loja.cor}}>{loja.nome}</div>
+            </div>
+            <div className="perfil-body">
+              <div className="perfil-nome">{loja.nome}</div>
+              <div className="perfil-cat">{loja.categoria}</div>
+              <div className="perfil-row"><StoreStatusBadge aberto={loja.aberto} fecha={loja.fecha}/></div>
+              <div className="perfil-end">📍 {loja.endereco}</div>
+              <div className="perfil-end" style={{marginTop:4}}>📞 {loja.contato}</div>
+              <div className="divider"/>
+              <div className="oferta-box">
+                <div>
+                  <div className="oferta-tag">🏷 Exclusivo no app</div>
+                  <div className="oferta-titulo">{loja.oferta}</div>
+                  <div className="oferta-detalhe">{loja.ofertaDetalhe}</div>
+                </div>
+                <div className="oferta-circle"/>
+              </div>
+              <div className="mapa-mini">
+                <div className="mapa-mini-inner">🗺</div>
+                <button className="como-chegar" onClick={() => setAba("explorar")}>Como chegar →</button>
+              </div>
+              <div className="divider"/>
+              <div className="perto-title">Perto daqui</div>
+              <div className="perto-sub">Enquanto você está no centro...</div>
+              <div className="perto-item">
+                <div className="perto-icon">🚻</div>
+                <div><div className="perto-nome">Banheiro Público</div><div className="perto-dist">45m de distância • Gratuito</div></div>
+                <div className="perto-arrow">›</div>
+              </div>
+              <div className="perto-item">
+                <div className="perto-icon">💧</div>
+                <div><div className="perto-nome">Bebedouro</div><div className="perto-dist">80m de distância • Gratuito</div></div>
+                <div className="perto-arrow">›</div>
+              </div>
+              <div className="divider"/>
+              <div className="section-header">
+                <span className="section-title">Hoje no centro</span>
+                <span className="section-link" onClick={() => setAba("eventos")}>Ver agenda</span>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {eventosHoje.map(ev => (
+                  <EventMiniCard key={ev.id} evento={ev} onClick={() => setAba("eventos")}/>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════
+       App.jsx — orquestrador principal
+    ════════════════════════════════════════════════════════════════════════ */
+    function App() {
+      const [aba,        setAba]        = useState("inicio");
+      const [buscaTermo, setBuscaTermo] = useState("");
+      const [lojaAtual,  setLojaAtual]  = useState(null);
+
+      useEffect(() => { if (buscaTermo) setAba("buscar"); }, [buscaTermo]);
+
+      function handleSetAba(a) { setLojaAtual(null); setAba(a); }
+
+      const mostrandoLoja = lojaAtual !== null;
+
+      return (
+        <div className="app-shell">
+          {mostrandoLoja ? (
+            <TelaLoja loja={lojaAtual} onVoltar={() => setLojaAtual(null)} setAba={handleSetAba}/>
+          ) : (
+            <>
+              {aba==="inicio"   && <TelaInicio  setAba={handleSetAba} setBuscaTermo={setBuscaTermo}/>}
+              {aba==="explorar" && <TelaMapa    setLojaAtual={setLojaAtual}/>}
+              {aba==="eventos"  && <TelaEventos/>}
+              {aba==="buscar"   && <TelaBusca   termo={buscaTermo} setTermo={setBuscaTermo} setLojaAtual={setLojaAtual}/>}
+            </>
+          )}
+          <NavBar aba={mostrandoLoja ? null : aba} setAba={handleSetAba}/>
+        </div>
+      );
+    }
+
+    /* ════════════════════════════════════════════════════════════════════════
+       main.jsx — bootstrap
+    ════════════════════════════════════════════════════════════════════════ */
+    ReactDOM.createRoot(document.getElementById("root")).render(
+      <React.StrictMode><App/></React.StrictMode>
+    );
+  </script>
 </body>
 </html>
