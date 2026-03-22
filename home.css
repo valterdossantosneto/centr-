@@ -91,9 +91,11 @@ body {
 }
 
 .cat_icon {
+    width: 40px;
     padding: 6px;
     border-radius: 10px;
     margin-bottom: 5px;
+    margin-left: 30%;
 }
 
 .cat_icon img {
@@ -169,6 +171,9 @@ body {
 
 .evento_local img {
     width: 14px;
+}
+.evento_titulo{
+    font-weight: bold;
 }
 
 /* STATUS */
